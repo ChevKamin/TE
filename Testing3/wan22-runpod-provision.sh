@@ -31,7 +31,7 @@ if [ ! -d "$COMFYUI_PATH" ]; then
 fi
 
 # Save the workflow JSON as default
-DEFAULT_WORKFLOW="https://raw.githubusercontent.com/YOUR_REPO/main/wan22_i2v_workflow.json"
+DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/wan22main.json"
 
 APT_PACKAGES=(
     "ffmpeg"
