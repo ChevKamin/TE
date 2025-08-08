@@ -186,6 +186,9 @@ function fix_dependencies() {
     # Install sageattention without dependencies first
     pip_install sageattention --no-deps
     
+    # Install aiohttp and yarl with full dependencies
+    pip_install aiohttp yarl
+    
     echo "✓ Dependencies fixed"
 }
 
