@@ -166,7 +166,7 @@ function fix_dependencies() {
     echo "========================================="
     
     # First uninstall conflicting packages
-    pip uninstall -y xformers torch torchvision torchaudio numpy tensorflow colour-science 2>/dev/null || true
+    pip uninstall -y xformers torch torchvision torchaudio numpy tensorflow colour-science aiohttp yarl 2>/dev/null || true
     
     # Install numpy first (base dependency)
     pip_install numpy==1.26.4
@@ -186,8 +186,9 @@ function fix_dependencies() {
     # Install sageattention without dependencies first
     pip_install sageattention --no-deps
     
-    # Install aiohttp and yarl with full dependencies
-    pip_install aiohttp yarl
+    # Install aiohttp and yarl with full dependencies (latest compatible versions)
+    pip_install aiohttp
+    pip_install yarl
     
     echo "✓ Dependencies fixed"
 }
@@ -282,10 +283,7 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${dir}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                   # Install requirements without upgrading core packages
-                   pip_install -r "$requirements" --no-deps
-                   # Then install with deps but without upgrade
-                   pip_install -r "$requirements" --no-upgrade
+                   pip_install -r "$requirements"
                 fi
             fi
         else
@@ -295,21 +293,20 @@ function provisioning_get_nodes() {
             # Special handling for each node's requirements
             if [[ "$dir" == "ComfyUI-KJNodes" ]]; then
                 cd "$path"
-                # Install KJNodes requirements carefully
-                pip_install -r requirements.txt --no-deps 2>/dev/null || true
-                pip_install color-matcher --no-deps
-                pip_install audioread librosa --no-deps
+                pip_install -r requirements.txt
+                pip_install color-matcher
+                pip_install audioread librosa
                 cd -
             elif [[ "$dir" == "ComfyUI-VideoHelperSuite" ]]; then
                 cd "$path"
-                pip_install -r requirements.txt --no-deps 2>/dev/null || true
+                pip_install -r requirements.txt
                 cd -
-            elif [[ "$dir" == "ComfyUI" ]]; then  # Special handling for comfy-core
+            elif [[ "$dir" == "ComfyUI" ]]; then  # ComfyUI core
                 cd "$path"
-                pip_install -r requirements.txt --no-deps 2>/dev/null || true
+                pip_install -r requirements.txt
                 cd -
             elif [[ -e $requirements ]]; then
-                pip_install -r "${requirements}" --no-deps 2>/dev/null || true
+                pip_install -r "${requirements}"
             fi
         fi
     done
