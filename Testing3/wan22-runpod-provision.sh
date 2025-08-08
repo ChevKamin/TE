@@ -70,6 +70,7 @@ NODES=(
     "https://github.com/kijai/ComfyUI-KJNodes"
     "https://github.com/rgthree/rgthree-comfy"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
+    "https://github.com/comfyanonymous/ComfyUI"  # Added comfy-core
     
     # Highly recommended
     "https://github.com/ltdrdata/ComfyUI-Manager"
@@ -300,6 +301,10 @@ function provisioning_get_nodes() {
                 cd "$path"
                 pip_install -r requirements.txt --no-deps 2>/dev/null || true
                 cd -
+            elif [[ "$dir" == "ComfyUI" ]]; then  # Special handling for comfy-core
+                cd "$path"
+                pip_install -r requirements.txt --no-deps 2>/dev/null || true
+                cd -
             elif [[ -e $requirements ]]; then
                 pip_install -r "${requirements}" --no-deps 2>/dev/null || true
             fi
@@ -522,6 +527,7 @@ function provisioning_print_header() {
     printf "#  - ComfyUI-KJNodes                        #\n"
     printf "#  - rgthree-comfy                          #\n"
     printf "#  - VideoHelperSuite                       #\n"
+    printf "#  - ComfyUI (core)                         #\n"
     printf "#                                            #\n"
     printf "##############################################\n\n"
 }
