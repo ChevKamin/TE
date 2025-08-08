@@ -70,8 +70,7 @@ NODES=(
     "https://github.com/kijai/ComfyUI-KJNodes"
     "https://github.com/rgthree/rgthree-comfy"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
-    "https://github.com/comfyanonymous/ComfyUI"  # Added comfy-core
-    "https://github.com/wandb/ComfyUI-WAN-Tools"  # Placeholder, replace with correct URL
+    "https://github.com/comfyanonymous/ComfyUI"  # Core ComfyUI with WAN support
     
     # Highly recommended
     "https://github.com/ltdrdata/ComfyUI-Manager"
@@ -304,10 +303,8 @@ function provisioning_get_nodes() {
                 cd -
             elif [[ "$dir" == "ComfyUI" ]]; then  # ComfyUI core
                 cd "$path"
-                pip_install -r requirements.txt
-                cd -
-            elif [[ "$dir" == "ComfyUI-WAN-Tools" ]]; then  # New WAN node
-                cd "$path"
+                # Checkout a recent commit with WAN 2.2 support (adjust commit hash as needed)
+                git checkout $(git rev-list -n 1 --before="2025-08-08" main) 2>/dev/null || git checkout main
                 pip_install -r requirements.txt
                 cd -
             elif [[ -e $requirements ]]; then
@@ -403,6 +400,16 @@ sys.path.insert(0, '/opt/ComfyUI/custom_nodes')
 def check_nodes():
     found_nodes = {}
     
+    # Check ComfyUI core (including WanImageToVideo)
+    try:
+        sys.path.insert(0, '/opt/ComfyUI/custom_nodes/ComfyUI')
+        import nodes  # Import the nodes module from ComfyUI
+        if hasattr(nodes, 'NODE_CLASS_MAPPINGS'):
+            found_nodes.update(nodes.NODE_CLASS_MAPPINGS)
+            print(f"✓ ComfyUI Core: {len(nodes.NODE_CLASS_MAPPINGS)} nodes loaded")
+    except Exception as e:
+        print(f"✗ ComfyUI Core failed: {e}")
+    
     # Check KJNodes
     try:
         sys.path.insert(0, '/opt/ComfyUI/custom_nodes/ComfyUI-KJNodes')
@@ -425,7 +432,7 @@ def check_nodes():
     
     # Check for required nodes
     required = ['CreateVideo', 'SaveVideo', 'TorchCompileModelWanVideoV2', 
-                'PathchSageAttentionKJ', 'WanImageToVideo', 'ImageResizeKJv2']
+                'PatchSageAttentionKJ', 'WanImageToVideo', 'ImageResizeKJv2']
     
     print("\nRequired nodes status:")
     for node in required:
