@@ -2,36 +2,10 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Customized for WAN 2.2 Image-to-Video 14B Workflow
-
-# Since not using ai-dock, we need to set up paths manually
-export WORKSPACE="/workspace"
-export COMFYUI_PATH="$WORKSPACE/ComfyUI"
-
-# Install Python and system dependencies first
-apt-get update && apt-get install -y \
-    python3-pip \
-    python3-venv \
-    git \
-    wget \
-    curl \
-    ffmpeg \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxrender1 \
-    libxext6
-
-# Clone ComfyUI if not exists
-if [ ! -d "$COMFYUI_PATH" ]; then
-    cd $WORKSPACE
-    git clone https://github.com/comfyanonymous/ComfyUI.git
-    cd ComfyUI
-    pip3 install -r requirements.txt
-fi
+# Fixed for WAN 2.2 Image-to-Video 14B Workflow with all required nodes
 
 # Save the workflow JSON as default
-DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/wan22main.json"
+DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
 
 APT_PACKAGES=(
     "ffmpeg"
@@ -42,6 +16,8 @@ APT_PACKAGES=(
     "libxext6"
     "nvtop"
     "htop"
+    "build-essential"
+    "python3-dev"
 )
 
 PIP_PACKAGES=(
@@ -55,18 +31,23 @@ PIP_PACKAGES=(
     "bitsandbytes"
     "sageattention"
     "triton"
-    "torch-compile"
+    "scipy"
+    "scikit-image"
+    "kornia"
+    "spandrel"
+    "color-matcher"
+    "tensorflow"
+    "audioread"
+    "librosa"
 )
 
 NODES=(
-    # REQUIRED for this workflow - DO NOT REMOVE
-    "https://github.com/kijai/ComfyUI-KJNodes"  # Required: TorchCompileModelWanVideoV2, PathchSageAttentionKJ, ImageResizeKJv2
-    "https://github.com/rgthree/rgthree-comfy"  # Required: Power Lora Loader
+    # CRITICAL - These are REQUIRED for your workflow
+    "https://github.com/kijai/ComfyUI-KJNodes"  # TorchCompileModelWanVideoV2, PathchSageAttentionKJ, ImageResizeKJv2
+    "https://github.com/rgthree/rgthree-comfy"  # Power Lora Loader
+    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"  # CreateVideo, SaveVideo
     
-    # Core video/image handling
-    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"  # Video creation and saving
-    
-    # Highly recommended utility nodes
+    # Highly recommended
     "https://github.com/ltdrdata/ComfyUI-Manager"  # Node package manager
     "https://github.com/pythongosssss/ComfyUI-Custom-Scripts"  # Better workflow management
     "https://github.com/crystian/ComfyUI-Crystools"  # Monitoring and debugging
@@ -78,7 +59,7 @@ NODES=(
 )
 
 WORKFLOWS=(
-    # The actual WAN 2.2 workflow will be saved directly
+    # Your workflow will be loaded from DEFAULT_WORKFLOW
 )
 
 CHECKPOINT_MODELS=(
@@ -86,112 +67,72 @@ CHECKPOINT_MODELS=(
 )
 
 UNET_MODELS=(
-    # WAN 2.2 14B Image-to-Video models (FP8 quantized for efficiency)
-    # These are the exact models from your workflow
-    # Note: Replace with actual HuggingFace URLs when publicly available
-    
-    # High noise model for initial generation (steps 0-2)
-    "https://huggingface.co/wan/wan22/resolve/main/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors"
-    
-    # Low noise model for refinement (steps 2-10)
-    "https://huggingface.co/wan/wan22/resolve/main/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors"
+    # WAN 2.2 14B models - Replace these URLs with actual HuggingFace links when available
+    # "https://huggingface.co/wan/wan22/resolve/main/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors"
+    # "https://huggingface.co/wan/wan22/resolve/main/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors"
 )
 
 CLIP_MODELS=(
-    # UMT5-XXL CLIP model specifically for WAN (from your workflow)
-    "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+    # UMT5-XXL CLIP model for WAN
+    # "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
 )
 
 LORA_MODELS=(
-    # WAN 2.1 I2V LoRA for improved video generation (from your workflow)
-    "https://huggingface.co/wan/loras/resolve/main/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors"
-    
-    # Optional: Instagirlv3 (disabled in your workflow but keeping for completeness)
-    # "https://civitai.com/api/download/models/XXXXX?type=Model&format=SafeTensor"
+    # WAN 2.1 I2V LoRA
+    # "https://huggingface.co/wan/loras/resolve/main/Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors"
 )
 
 VAE_MODELS=(
-    # WAN 2.1 VAE (from your workflow)
-    "https://huggingface.co/wan/wan_vae/resolve/main/wan_2.1_vae.safetensors"
+    # WAN 2.1 VAE
+    # "https://huggingface.co/wan/wan_vae/resolve/main/wan_2.1_vae.safetensors"
 )
 
 ESRGAN_MODELS=(
-    # Optional upscaling models (not used in workflow but useful for preprocessing)
-    # "https://huggingface.co/FacehugmanIII/4x_foolhardy_Remacri/resolve/main/4x_foolhardy_Remacri.pth"
+    # Optional upscaling models
 )
 
 CONTROLNET_MODELS=(
-    # Not used in this WAN workflow
+    # Not used in WAN workflow
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
 
 # GPU Detection and Configuration for WAN 2.2
 function detect_gpu_config() {
-    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1 | sed 's/^[[:space:]]*//')
-    GPU_MEMORY=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1)
-    
-    echo "========================================="
-    echo "GPU Detection for WAN 2.2 Workflow"
-    echo "========================================="
-    echo "Detected GPU: $GPU_NAME"
-    echo "VRAM: ${GPU_MEMORY}MB"
-    
-    # Set environment variables based on GPU for optimal WAN 2.2 performance
-    if [[ "$GPU_NAME" == *"B200"* ]] || [[ "$GPU_NAME" == *"B100"* ]]; then
-        echo "Profile: Blackwell Architecture - Maximum Performance"
-        export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True,garbage_collection_threshold:0.9,max_split_size_mb:512"
-        export MEMORY_MODE="unlimited"
-        export TORCH_FP8_E4M3_ENABLED=1
-        export TORCH_FP8_E5M2_ENABLED=1
-        export WAN_TILE_SIZE=512
-        export WAN_TILE_OVERLAP=128
-        export WAN_BATCH_SIZE=4
-    elif [[ "$GPU_NAME" == *"H100"* ]] || [[ "$GPU_NAME" == *"H200"* ]]; then
-        echo "Profile: Hopper Architecture - Optimal Performance"
-        export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True,max_split_size_mb:512"
-        export MEMORY_MODE="highvram"
-        export TORCH_FP8_E4M3_ENABLED=1
-        export WAN_TILE_SIZE=384
-        export WAN_TILE_OVERLAP=96
-        export WAN_BATCH_SIZE=2
-    elif [[ "$GPU_NAME" == *"A100"* ]] || [[ "$GPU_MEMORY" -ge 40000 ]]; then
-        echo "Profile: Professional GPU - High Performance"
-        export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:512"
-        export MEMORY_MODE="highvram"
-        export WAN_TILE_SIZE=384
-        export WAN_TILE_OVERLAP=96
-        export WAN_BATCH_SIZE=1
-    elif [[ "$GPU_MEMORY" -ge 24000 ]]; then
-        echo "Profile: Consumer GPU - Standard Performance"
-        export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:256"
-        export MEMORY_MODE="normalvram"
-        export WAN_TILE_SIZE=256  # Matches your workflow
-        export WAN_TILE_OVERLAP=64  # Matches your workflow
-        export WAN_BATCH_SIZE=1  # Matches your workflow
+    if command -v nvidia-smi &> /dev/null; then
+        GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1 | sed 's/^[[:space:]]*//')
+        GPU_MEMORY=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1)
+        
+        echo "========================================="
+        echo "GPU Detection for WAN 2.2 Workflow"
+        echo "========================================="
+        echo "Detected GPU: $GPU_NAME"
+        echo "VRAM: ${GPU_MEMORY}MB"
+        
+        # Set environment variables based on GPU
+        if [[ "$GPU_MEMORY" -ge 40000 ]]; then
+            echo "Profile: High VRAM GPU"
+            export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:512"
+            export MEMORY_MODE="highvram"
+        elif [[ "$GPU_MEMORY" -ge 24000 ]]; then
+            echo "Profile: Standard VRAM GPU"
+            export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:256"
+            export MEMORY_MODE="normalvram"
+        else
+            echo "WARNING: Low VRAM detected - WAN 2.2 14B models may not run properly"
+            export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
+            export MEMORY_MODE="lowvram"
+        fi
+        
+        # Common optimizations
+        export CUDA_LAUNCH_BLOCKING=0
+        export TORCH_CUDNN_V8_API_ENABLED=1
+        export TORCHINDUCTOR_CACHE_DIR=/workspace/torch_compile_cache
+        export TORCHINDUCTOR_FX_GRAPH_CACHE=1
     else
-        echo "WARNING: Insufficient VRAM for WAN 2.2 14B models!"
-        echo "Minimum requirement: 24GB VRAM"
-        echo "Your GPU has: ${GPU_MEMORY}MB"
-        export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
-        export MEMORY_MODE="lowvram"
-        export WAN_TILE_SIZE=192
-        export WAN_TILE_OVERLAP=48
-        export WAN_BATCH_SIZE=1
+        echo "No GPU detected - CPU mode"
+        export MEMORY_MODE="cpu"
     fi
-    
-    # Common optimizations for WAN video generation
-    export CUDA_LAUNCH_BLOCKING=0
-    export TORCH_CUDNN_V8_API_ENABLED=1
-    export TORCHINDUCTOR_CACHE_DIR=/workspace/torch_compile_cache
-    export TORCHINDUCTOR_FX_GRAPH_CACHE=1
-    export TORCHINDUCTOR_COORDINATE_DESCENT_TUNING=1
-    export TORCHDYNAMO_VERBOSE=0
-    
-    echo "Memory Mode: $MEMORY_MODE"
-    echo "Tile Size: $WAN_TILE_SIZE"
-    echo "Batch Capability: $WAN_BATCH_SIZE"
-    echo "========================================="
 }
 
 function provisioning_start() {
@@ -201,15 +142,14 @@ function provisioning_start() {
     source /opt/ai-dock/etc/environment.sh
     source /opt/ai-dock/bin/venv-set.sh comfyui
     
-    # Detect and configure for GPU
+    # Detect and configure GPU
     detect_gpu_config
     
-    # Check for HuggingFace token for gated models
+    # Check for HuggingFace token
     if provisioning_has_valid_hf_token; then
-        echo "✓ HuggingFace token detected - can access gated models"
+        echo "✓ HuggingFace token detected"
     else
-        echo "⚠ No valid HF_TOKEN found - some models may require manual download"
-        echo "  Set HF_TOKEN environment variable in RunPod for automatic downloads"
+        echo "⚠ No valid HF_TOKEN found"
     fi
     
     provisioning_print_header
@@ -217,7 +157,7 @@ function provisioning_start() {
     provisioning_get_nodes
     provisioning_get_pip_packages
     
-    # Download models in the correct directories
+    # Download models if URLs are provided
     provisioning_get_models \
         "${WORKSPACE}/ComfyUI/models/unet" \
         "${UNET_MODELS[@]}"
@@ -232,125 +172,9 @@ function provisioning_start() {
         "${VAE_MODELS[@]}"
         
     provisioning_get_workflows
-    provisioning_save_wan_workflow
-    provisioning_configure_wan_settings
+    provisioning_get_default_workflow
+    provisioning_verify_nodes
     provisioning_print_end
-}
-
-function provisioning_save_wan_workflow() {
-    echo "Installing WAN 2.2 I2V workflow..."
-    
-    # Save the workflow JSON directly
-    cat > /opt/ComfyUI/wan22_i2v_workflow.json << 'WORKFLOW_END'
-{
-  "id": "ec7da562-7e21-4dac-a0d2-f4441e1efd3b",
-  "workflow_name": "WAN 2.2 Image-to-Video 14B",
-  "description": "Two-stage video generation with high/low noise models",
-  "requirements": {
-    "min_vram": "24GB",
-    "optimal_vram": "48GB+",
-    "custom_nodes": ["ComfyUI-KJNodes", "rgthree-comfy"],
-    "models": {
-      "unet": ["wan2.2_i2v_high_noise_14B_fp8_scaled", "wan2.2_i2v_low_noise_14B_fp8_scaled"],
-      "clip": ["umt5_xxl_fp8_e4m3fn_scaled"],
-      "vae": ["wan_2.1_vae"],
-      "lora": ["Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64"]
-    }
-  },
-  "settings": {
-    "video_length": 121,
-    "fps": 24,
-    "tile_size": 256,
-    "tile_overlap": 64,
-    "stage1_steps": "0-2",
-    "stage2_steps": "2-10",
-    "cfg_scale": 1.0,
-    "sampler": "euler",
-    "scheduler": "simple"
-  }
-}
-WORKFLOW_END
-    
-    # Also save to user workflows directory
-    mkdir -p /opt/ComfyUI/user/default/workflows
-    cp /opt/ComfyUI/wan22_i2v_workflow.json /opt/ComfyUI/user/default/workflows/
-    
-    echo "✓ WAN 2.2 workflow installed"
-}
-
-function provisioning_configure_wan_settings() {
-    echo "Configuring WAN 2.2 optimizations..."
-    
-    # Create WAN-specific configuration
-    cat > /opt/ComfyUI/wan_config.json << EOF
-{
-    "gpu": "$GPU_NAME",
-    "vram": "$GPU_MEMORY",
-    "memory_mode": "$MEMORY_MODE",
-    "optimizations": {
-        "tile_size": $WAN_TILE_SIZE,
-        "tile_overlap": $WAN_TILE_OVERLAP,
-        "temporal_size": 64,
-        "temporal_overlap": 8,
-        "batch_size": $WAN_BATCH_SIZE,
-        "torch_compile": {
-            "backend": "inductor",
-            "mode": "default",
-            "fullgraph": false,
-            "dynamic": false,
-            "transformer_only": true,
-            "cache_size_limit": 64
-        },
-        "sage_attention": "auto"
-    },
-    "workflow_params": {
-        "video_frames": 121,
-        "fps": 24,
-        "duration_seconds": 5,
-        "resolution": "dynamic",
-        "divisible_by": 64
-    }
-}
-EOF
-    
-    # Create optimized startup script for WAN
-    cat > /opt/ComfyUI/start_wan.sh << 'EOF'
-#!/bin/bash
-cd /opt/ComfyUI
-
-source /opt/ai-dock/etc/environment.sh
-
-echo "Starting ComfyUI with WAN 2.2 optimizations..."
-echo "Memory Mode: $MEMORY_MODE"
-echo "Tile Size: $WAN_TILE_SIZE"
-
-# Launch with appropriate memory settings
-if [ "$MEMORY_MODE" == "unlimited" ] || [ "$MEMORY_MODE" == "highvram" ]; then
-    python main.py \
-        --listen 0.0.0.0 \
-        --port 8188 \
-        --highvram \
-        --use-pytorch-cross-attention \
-        --disable-metadata
-elif [ "$MEMORY_MODE" == "normalvram" ]; then
-    python main.py \
-        --listen 0.0.0.0 \
-        --port 8188 \
-        --normalvram \
-        --use-pytorch-cross-attention \
-        --disable-metadata
-else
-    python main.py \
-        --listen 0.0.0.0 \
-        --port 8188 \
-        --lowvram \
-        --use-split-cross-attention \
-        --disable-metadata
-fi
-EOF
-    chmod +x /opt/ComfyUI/start_wan.sh
-    
-    echo "✓ WAN 2.2 optimizations configured"
 }
 
 function pip_install() {
@@ -388,14 +212,87 @@ function provisioning_get_nodes() {
                 fi
             fi
         else
-            printf "Installing node: %s...\n" "${dir}"
+            printf "Installing CRITICAL node: %s...\n" "${dir}"
             git clone "${repo}" "${path}" --recursive
             if [[ -e $requirements ]]; then
+                echo "Installing requirements for ${dir}..."
                 pip_install -r "${requirements}"
+            fi
+            
+            # Special handling for KJNodes
+            if [[ "$dir" == "ComfyUI-KJNodes" ]]; then
+                echo "Installing additional dependencies for KJNodes..."
+                pip_install color-matcher tensorflow audioread librosa scipy
             fi
         fi
     done
     echo "✓ Custom nodes installed"
+}
+
+function provisioning_verify_nodes() {
+    echo "========================================="
+    echo "Verifying Node Installation"
+    echo "========================================="
+    
+    # Check if critical nodes are installed
+    local missing_nodes=0
+    
+    if [ ! -d "/opt/ComfyUI/custom_nodes/ComfyUI-KJNodes" ]; then
+        echo "✗ MISSING: ComfyUI-KJNodes (Required for TorchCompileModelWanVideoV2, PathchSageAttentionKJ, ImageResizeKJv2)"
+        missing_nodes=1
+    else
+        echo "✓ ComfyUI-KJNodes installed"
+    fi
+    
+    if [ ! -d "/opt/ComfyUI/custom_nodes/rgthree-comfy" ]; then
+        echo "✗ MISSING: rgthree-comfy (Required for Power Lora Loader)"
+        missing_nodes=1
+    else
+        echo "✓ rgthree-comfy installed"
+    fi
+    
+    if [ ! -d "/opt/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite" ]; then
+        echo "✗ MISSING: ComfyUI-VideoHelperSuite (Required for CreateVideo, SaveVideo)"
+        missing_nodes=1
+    else
+        echo "✓ ComfyUI-VideoHelperSuite installed"
+    fi
+    
+    if [ $missing_nodes -eq 1 ]; then
+        echo ""
+        echo "⚠ WARNING: Some critical nodes are missing!"
+        echo "The workflow may not load properly."
+        echo "Try restarting ComfyUI or manually installing missing nodes."
+    else
+        echo ""
+        echo "✓ All critical nodes are installed!"
+    fi
+    
+    # Create a model checklist
+    cat > ${WORKSPACE}/wan22_model_checklist.txt << 'EOF'
+WAN 2.2 REQUIRED MODELS CHECKLIST
+==================================
+
+Place these models in the specified directories:
+
+□ models/unet/
+  - wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors
+  - wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors
+
+□ models/clip/
+  - umt5_xxl_fp8_e4m3fn_scaled.safetensors
+
+□ models/vae/
+  - wan_2.1_vae.safetensors
+
+□ models/loras/
+  - Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors
+
+Without these models, the workflow will not function!
+EOF
+    
+    echo ""
+    echo "Model checklist saved to: ${WORKSPACE}/wan22_model_checklist.txt"
 }
 
 function provisioning_get_workflows() {
@@ -416,9 +313,14 @@ function provisioning_get_workflows() {
 
 function provisioning_get_default_workflow() {
     if [[ -n $DEFAULT_WORKFLOW ]]; then
+        echo "Loading WAN 2.2 workflow..."
         workflow_json=$(curl -s "$DEFAULT_WORKFLOW")
         if [[ -n $workflow_json ]]; then
+            # Save to default graph
             echo "export const defaultGraph = $workflow_json;" > /opt/ComfyUI/web/scripts/defaultGraph.js
+            # Also save as a loadable workflow
+            echo "$workflow_json" > /opt/ComfyUI/user/default/workflows/wan22_i2v.json
+            echo "✓ WAN 2.2 workflow loaded as default"
         fi
     fi
 }
@@ -431,15 +333,8 @@ function provisioning_get_models() {
     shift
     arr=("$@")
     
-    # Check disk space for WAN models (they're large!)
-    available_space=$(df /workspace | awk 'NR==2 {print $4}')
-    required_space=60000000  # ~60GB for all WAN models
-    
-    if [ "$available_space" -lt "$required_space" ]; then
-        echo "⚠ WARNING: May have insufficient disk space for all WAN 2.2 models"
-        echo "  Available: $(echo $available_space | awk '{print int($1/1024/1024)}')GB"
-        echo "  Recommended: 60GB minimum"
-        echo "  Each 14B model is ~15-20GB"
+    if [ ${#arr[@]} -eq 0 ]; then
+        return 0
     fi
     
     printf "Downloading %s model(s) to %s...\n" "${#arr[@]}" "$dir"
@@ -460,25 +355,12 @@ function provisioning_print_header() {
     printf "#                                            #\n"
     printf "#     WAN 2.2 I2V 14B Provisioning          #\n"
     printf "#                                            #\n"
-    printf "#  GPU: %-36s #\n" "$GPU_NAME"
-    printf "#  VRAM: %-35s #\n" "${GPU_MEMORY}MB"
-    printf "#  Mode: %-35s #\n" "$MEMORY_MODE"
-    printf "#                                            #\n"
-    printf "#  Installing:                               #\n"
-    printf "#  - ComfyUI with custom nodes              #\n"
-    printf "#  - WAN 2.2 14B models (FP8)               #\n"
-    printf "#  - Video generation pipeline              #\n"
-    printf "#                                            #\n"
-    printf "#  This will take 15-25 minutes             #\n"
+    printf "#  Installing critical nodes:                #\n"
+    printf "#  - ComfyUI-KJNodes                        #\n"
+    printf "#  - rgthree-comfy                          #\n"
+    printf "#  - VideoHelperSuite                       #\n"
     printf "#                                            #\n"
     printf "##############################################\n\n"
-    
-    if [[ "$GPU_MEMORY" -lt 24000 ]]; then
-        printf "⚠ CRITICAL WARNING ⚠\n"
-        printf "Your GPU has insufficient VRAM for WAN 2.2 14B models\n"
-        printf "Minimum requirement: 24GB VRAM\n"
-        printf "Your GPU: ${GPU_MEMORY}MB\n\n"
-    fi
 }
 
 function provisioning_print_end() {
@@ -486,15 +368,32 @@ function provisioning_print_end() {
     printf "#                                            #\n"
     printf "#   ✓ WAN 2.2 Provisioning Complete!        #\n"
     printf "#                                            #\n"
-    printf "#   ComfyUI starting automatically...       #\n"
-    printf "#   Access at: http://[POD_IP]:8188         #\n"
+    printf "#   Critical Nodes Status:                   #\n"
+    
+    if [ -d "/opt/ComfyUI/custom_nodes/ComfyUI-KJNodes" ]; then
+        printf "#   ✓ KJNodes installed                     #\n"
+    else
+        printf "#   ✗ KJNodes MISSING                       #\n"
+    fi
+    
+    if [ -d "/opt/ComfyUI/custom_nodes/rgthree-comfy" ]; then
+        printf "#   ✓ rgthree installed                     #\n"
+    else
+        printf "#   ✗ rgthree MISSING                       #\n"
+    fi
+    
+    if [ -d "/opt/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite" ]; then
+        printf "#   ✓ VideoHelperSuite installed            #\n"
+    else
+        printf "#   ✗ VideoHelperSuite MISSING              #\n"
+    fi
+    
     printf "#                                            #\n"
-    printf "#   Workflow Details:                        #\n"
-    printf "#   - Model: WAN 2.2 14B I2V                #\n"
-    printf "#   - Stages: High + Low Noise              #\n"
-    printf "#   - Output: 121 frames @ 24fps            #\n"
-    printf "#   - Duration: 5 seconds                   #\n"
-    printf "#   - Tile Size: %d                        #\n" "$WAN_TILE_SIZE"
+    printf "#   Access ComfyUI at:                       #\n"
+    printf "#   http://[POD_IP]:8188                    #\n"
+    printf "#                                            #\n"
+    printf "#   IMPORTANT: Add WAN 2.2 models to:       #\n"
+    printf "#   /workspace/ComfyUI/models/              #\n"
     printf "#                                            #\n"
     printf "##############################################\n\n"
 }
