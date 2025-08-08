@@ -4,6 +4,32 @@
 # https://github.com/ai-dock/comfyui
 # Customized for WAN 2.2 Image-to-Video 14B Workflow
 
+# Since not using ai-dock, we need to set up paths manually
+export WORKSPACE="/workspace"
+export COMFYUI_PATH="$WORKSPACE/ComfyUI"
+
+# Install Python and system dependencies first
+apt-get update && apt-get install -y \
+    python3-pip \
+    python3-venv \
+    git \
+    wget \
+    curl \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6
+
+# Clone ComfyUI if not exists
+if [ ! -d "$COMFYUI_PATH" ]; then
+    cd $WORKSPACE
+    git clone https://github.com/comfyanonymous/ComfyUI.git
+    cd ComfyUI
+    pip3 install -r requirements.txt
+fi
+
 # Save the workflow JSON as default
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/YOUR_REPO/main/wan22_i2v_workflow.json"
 
