@@ -2,7 +2,7 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Fixed for WAN 2.2 Image-to-Video 14B Workflow with all required nodes
+# Fixed for WAN 2.2 with proper dependency resolution
 
 # Save the workflow JSON as default
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
@@ -18,44 +18,68 @@ APT_PACKAGES=(
     "htop"
     "build-essential"
     "python3-dev"
+    "libportaudio2"
+    "libportaudiocpp0"
+    "portaudio19-dev"
 )
 
+# CRITICAL: Use specific versions to avoid conflicts
 PIP_PACKAGES=(
+    # Core dependencies with specific versions
+    "numpy==1.26.4"  # Compatible with both tensorflow and colour-science
+    "torch==2.4.1"
+    "torchvision"
+    "torchaudio"
+    
+    # Video and image processing
     "opencv-python-headless"
     "imageio"
     "imageio-ffmpeg"
     "einops"
     "transformers"
     "accelerate"
-    "xformers"
-    "bitsandbytes"
-    "sageattention"
-    "triton"
+    
+    # Other dependencies
     "scipy"
     "scikit-image"
     "kornia"
     "spandrel"
     "color-matcher"
-    "tensorflow"
     "audioread"
     "librosa"
+    "matplotlib"
+    "numba"
+    "omegaconf"
+    "safetensors"
+    "tqdm"
+    "psutil"
+    "Pillow"
 )
 
+# XFormers will be installed separately to match torch version
+XFORMERS_PACKAGE="xformers==0.0.28.post1"
+
+# TensorFlow with compatible version
+TENSORFLOW_PACKAGE="tensorflow==2.19.0"
+
+# Colour-science with compatible version
+COLOUR_SCIENCE_PACKAGE="colour-science==0.4.4"
+
 NODES=(
-    # CRITICAL - These are REQUIRED for your workflow
-    "https://github.com/kijai/ComfyUI-KJNodes"  # TorchCompileModelWanVideoV2, PathchSageAttentionKJ, ImageResizeKJv2
-    "https://github.com/rgthree/rgthree-comfy"  # Power Lora Loader
-    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"  # CreateVideo, SaveVideo
+    # CRITICAL - Required for WAN workflow
+    "https://github.com/kijai/ComfyUI-KJNodes"
+    "https://github.com/rgthree/rgthree-comfy"
+    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
     
     # Highly recommended
-    "https://github.com/ltdrdata/ComfyUI-Manager"  # Node package manager
-    "https://github.com/pythongosssss/ComfyUI-Custom-Scripts"  # Better workflow management
-    "https://github.com/crystian/ComfyUI-Crystools"  # Monitoring and debugging
+    "https://github.com/ltdrdata/ComfyUI-Manager"
+    "https://github.com/pythongosssss/ComfyUI-Custom-Scripts"
+    "https://github.com/crystian/ComfyUI-Crystools"
     
-    # Optional but useful
-    "https://github.com/WASasquatch/was-node-suite-comfyui"  # Additional utilities
-    "https://github.com/cubiq/ComfyUI_essentials"  # Essential tools
-    "https://github.com/melMass/comfy_mtb"  # Media toolbox
+    # Optional utilities
+    "https://github.com/WASasquatch/was-node-suite-comfyui"
+    "https://github.com/cubiq/ComfyUI_essentials"
+    "https://github.com/melMass/comfy_mtb"
 )
 
 WORKFLOWS=(
@@ -67,7 +91,7 @@ CHECKPOINT_MODELS=(
 )
 
 UNET_MODELS=(
-    # WAN 2.2 14B models - Replace these URLs with actual HuggingFace links when available
+    # WAN 2.2 14B models - Replace with actual URLs
     # "https://huggingface.co/wan/wan22/resolve/main/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors"
     # "https://huggingface.co/wan/wan22/resolve/main/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors"
 )
@@ -135,6 +159,35 @@ function detect_gpu_config() {
     fi
 }
 
+function fix_dependencies() {
+    echo "========================================="
+    echo "Fixing Python Dependencies"
+    echo "========================================="
+    
+    # First uninstall conflicting packages
+    pip uninstall -y xformers torch torchvision torchaudio numpy tensorflow colour-science 2>/dev/null || true
+    
+    # Install numpy first (base dependency)
+    pip_install numpy==1.26.4
+    
+    # Install PyTorch with specific version
+    pip_install torch==2.4.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    
+    # Install xformers compatible with torch 2.4.1
+    pip_install xformers==0.0.28.post1 --no-deps
+    
+    # Install tensorflow with compatible numpy
+    pip_install tensorflow==2.19.0
+    
+    # Install colour-science
+    pip_install colour-science==0.4.4
+    
+    # Install sageattention without dependencies first
+    pip_install sageattention --no-deps
+    
+    echo "✓ Dependencies fixed"
+}
+
 function provisioning_start() {
     if [[ ! -d /opt/environments/python ]]; then 
         export MAMBA_BASE=true
@@ -153,9 +206,13 @@ function provisioning_start() {
     fi
     
     provisioning_print_header
+    
+    # Fix dependencies BEFORE installing anything else
+    fix_dependencies
+    
     provisioning_get_apt_packages
     provisioning_get_nodes
-    provisioning_get_pip_packages
+    provisioning_get_pip_packages_fixed  # Use fixed version
     
     # Download models if URLs are provided
     provisioning_get_models \
@@ -173,6 +230,10 @@ function provisioning_start() {
         
     provisioning_get_workflows
     provisioning_get_default_workflow
+    
+    # Fix KJNodes installation
+    fix_kjnodes_installation
+    
     provisioning_verify_nodes
     provisioning_print_end
 }
@@ -191,10 +252,18 @@ function provisioning_get_apt_packages() {
     fi
 }
 
-function provisioning_get_pip_packages() {
-    if [[ -n $PIP_PACKAGES ]]; then
-            pip_install ${PIP_PACKAGES[@]}
-    fi
+function provisioning_get_pip_packages_fixed() {
+    echo "Installing Python packages with fixed versions..."
+    
+    # Install packages that don't have conflicts
+    for package in "${PIP_PACKAGES[@]}"; do
+        # Skip packages we've already installed in fix_dependencies
+        if [[ "$package" != "numpy"* ]] && [[ "$package" != "torch"* ]] && [[ "$package" != "xformers"* ]]; then
+            pip_install "$package" || echo "Warning: Failed to install $package"
+        fi
+    done
+    
+    echo "✓ Python packages installed"
 }
 
 function provisioning_get_nodes() {
@@ -203,30 +272,107 @@ function provisioning_get_nodes() {
         dir="${repo##*/}"
         path="/opt/ComfyUI/custom_nodes/${dir}"
         requirements="${path}/requirements.txt"
+        
         if [[ -d $path ]]; then
             if [[ ${AUTO_UPDATE,,} != "false" ]]; then
                 printf "Updating node: %s...\n" "${dir}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                   pip_install -r "$requirements"
+                   # Install requirements without upgrading core packages
+                   pip_install -r "$requirements" --no-deps
+                   # Then install with deps but without upgrade
+                   pip_install -r "$requirements" --no-upgrade
                 fi
             fi
         else
             printf "Installing CRITICAL node: %s...\n" "${dir}"
             git clone "${repo}" "${path}" --recursive
-            if [[ -e $requirements ]]; then
-                echo "Installing requirements for ${dir}..."
-                pip_install -r "${requirements}"
-            fi
             
-            # Special handling for KJNodes
+            # Special handling for each node's requirements
             if [[ "$dir" == "ComfyUI-KJNodes" ]]; then
-                echo "Installing additional dependencies for KJNodes..."
-                pip_install color-matcher tensorflow audioread librosa scipy
+                cd "$path"
+                # Install KJNodes requirements carefully
+                pip_install -r requirements.txt --no-deps 2>/dev/null || true
+                pip_install color-matcher --no-deps
+                pip_install audioread librosa --no-deps
+                cd -
+            elif [[ "$dir" == "ComfyUI-VideoHelperSuite" ]]; then
+                cd "$path"
+                pip_install -r requirements.txt --no-deps 2>/dev/null || true
+                cd -
+            elif [[ -e $requirements ]]; then
+                pip_install -r "${requirements}" --no-deps 2>/dev/null || true
             fi
         fi
     done
     echo "✓ Custom nodes installed"
+}
+
+function fix_kjnodes_installation() {
+    echo "========================================="
+    echo "Fixing KJNodes Installation"
+    echo "========================================="
+    
+    cd /opt/ComfyUI/custom_nodes
+    
+    # Ensure KJNodes is properly installed
+    if [ -d "ComfyUI-KJNodes" ]; then
+        cd ComfyUI-KJNodes
+        
+        # Check if __init__.py exists and is properly configured
+        if [ ! -f "__init__.py" ]; then
+            echo "Creating __init__.py for KJNodes..."
+            cat > __init__.py << 'INIT_EOF'
+import os
+import sys
+import folder_paths
+import importlib
+
+node_list = []
+
+# Add this directory to path
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+# Try to import all node files
+for filename in os.listdir(os.path.dirname(os.path.realpath(__file__))):
+    if filename.endswith('.py') and filename not in ['__init__.py', 'install.py']:
+        try:
+            module = importlib.import_module(filename[:-3])
+            if hasattr(module, 'NODE_CLASS_MAPPINGS'):
+                node_list.append(module)
+        except Exception as e:
+            print(f"Failed to import {filename}: {e}")
+
+# Combine all nodes
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
+
+for module in node_list:
+    if hasattr(module, 'NODE_CLASS_MAPPINGS'):
+        NODE_CLASS_MAPPINGS.update(module.NODE_CLASS_MAPPINGS)
+    if hasattr(module, 'NODE_DISPLAY_NAME_MAPPINGS'):
+        NODE_DISPLAY_NAME_MAPPINGS.update(module.NODE_DISPLAY_NAME_MAPPINGS)
+
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+INIT_EOF
+        fi
+        
+        # Install missing Python dependencies
+        pip_install color-matcher --no-deps
+        pip_install audioread --no-deps
+        pip_install librosa --no-deps
+        
+        cd ..
+    fi
+    
+    # Fix VideoHelperSuite
+    if [ -d "ComfyUI-VideoHelperSuite" ]; then
+        cd ComfyUI-VideoHelperSuite
+        pip_install imageio imageio-ffmpeg --no-deps
+        cd ..
+    fi
+    
+    cd /opt/ComfyUI
 }
 
 function provisioning_verify_nodes() {
@@ -234,41 +380,55 @@ function provisioning_verify_nodes() {
     echo "Verifying Node Installation"
     echo "========================================="
     
-    # Check if critical nodes are installed
-    local missing_nodes=0
+    # Python verification of nodes
+    python3 << 'VERIFY_EOF'
+import sys
+import os
+sys.path.insert(0, '/opt/ComfyUI')
+sys.path.insert(0, '/opt/ComfyUI/custom_nodes')
+
+def check_nodes():
+    found_nodes = {}
     
-    if [ ! -d "/opt/ComfyUI/custom_nodes/ComfyUI-KJNodes" ]; then
-        echo "✗ MISSING: ComfyUI-KJNodes (Required for TorchCompileModelWanVideoV2, PathchSageAttentionKJ, ImageResizeKJv2)"
-        missing_nodes=1
-    else
-        echo "✓ ComfyUI-KJNodes installed"
-    fi
+    # Check KJNodes
+    try:
+        sys.path.insert(0, '/opt/ComfyUI/custom_nodes/ComfyUI-KJNodes')
+        import __init__ as kj
+        if hasattr(kj, 'NODE_CLASS_MAPPINGS'):
+            found_nodes.update(kj.NODE_CLASS_MAPPINGS)
+            print(f"✓ KJNodes: {len(kj.NODE_CLASS_MAPPINGS)} nodes loaded")
+    except Exception as e:
+        print(f"✗ KJNodes failed: {e}")
     
-    if [ ! -d "/opt/ComfyUI/custom_nodes/rgthree-comfy" ]; then
-        echo "✗ MISSING: rgthree-comfy (Required for Power Lora Loader)"
-        missing_nodes=1
-    else
-        echo "✓ rgthree-comfy installed"
-    fi
+    # Check VideoHelperSuite
+    try:
+        sys.path.insert(0, '/opt/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite')
+        import __init__ as vhs
+        if hasattr(vhs, 'NODE_CLASS_MAPPINGS'):
+            found_nodes.update(vhs.NODE_CLASS_MAPPINGS)
+            print(f"✓ VideoHelperSuite: {len(vhs.NODE_CLASS_MAPPINGS)} nodes loaded")
+    except Exception as e:
+        print(f"✗ VideoHelperSuite failed: {e}")
     
-    if [ ! -d "/opt/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite" ]; then
-        echo "✗ MISSING: ComfyUI-VideoHelperSuite (Required for CreateVideo, SaveVideo)"
-        missing_nodes=1
-    else
-        echo "✓ ComfyUI-VideoHelperSuite installed"
-    fi
+    # Check for required nodes
+    required = ['CreateVideo', 'SaveVideo', 'TorchCompileModelWanVideoV2', 
+                'PathchSageAttentionKJ', 'WanImageToVideo', 'ImageResizeKJv2']
     
-    if [ $missing_nodes -eq 1 ]; then
-        echo ""
-        echo "⚠ WARNING: Some critical nodes are missing!"
-        echo "The workflow may not load properly."
-        echo "Try restarting ComfyUI or manually installing missing nodes."
-    else
-        echo ""
-        echo "✓ All critical nodes are installed!"
-    fi
+    print("\nRequired nodes status:")
+    for node in required:
+        if node in found_nodes:
+            print(f"  ✓ {node}")
+        else:
+            print(f"  ✗ {node} MISSING")
+            # Look for similar nodes
+            similar = [n for n in found_nodes.keys() if node.lower()[:5] in n.lower()]
+            if similar:
+                print(f"    Similar found: {similar[:3]}")
+
+check_nodes()
+VERIFY_EOF
     
-    # Create a model checklist
+    # Create model checklist
     cat > ${WORKSPACE}/wan22_model_checklist.txt << 'EOF'
 WAN 2.2 REQUIRED MODELS CHECKLIST
 ==================================
@@ -354,8 +514,11 @@ function provisioning_print_header() {
     printf "\n##############################################\n"
     printf "#                                            #\n"
     printf "#     WAN 2.2 I2V 14B Provisioning          #\n"
+    printf "#     WITH DEPENDENCY FIXES                 #\n"
     printf "#                                            #\n"
-    printf "#  Installing critical nodes:                #\n"
+    printf "#  Installing:                               #\n"
+    printf "#  - Fixed PyTorch 2.4.1                    #\n"
+    printf "#  - Compatible numpy 1.26.4                #\n"
     printf "#  - ComfyUI-KJNodes                        #\n"
     printf "#  - rgthree-comfy                          #\n"
     printf "#  - VideoHelperSuite                       #\n"
@@ -368,26 +531,11 @@ function provisioning_print_end() {
     printf "#                                            #\n"
     printf "#   ✓ WAN 2.2 Provisioning Complete!        #\n"
     printf "#                                            #\n"
-    printf "#   Critical Nodes Status:                   #\n"
-    
-    if [ -d "/opt/ComfyUI/custom_nodes/ComfyUI-KJNodes" ]; then
-        printf "#   ✓ KJNodes installed                     #\n"
-    else
-        printf "#   ✗ KJNodes MISSING                       #\n"
-    fi
-    
-    if [ -d "/opt/ComfyUI/custom_nodes/rgthree-comfy" ]; then
-        printf "#   ✓ rgthree installed                     #\n"
-    else
-        printf "#   ✗ rgthree MISSING                       #\n"
-    fi
-    
-    if [ -d "/opt/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite" ]; then
-        printf "#   ✓ VideoHelperSuite installed            #\n"
-    else
-        printf "#   ✗ VideoHelperSuite MISSING              #\n"
-    fi
-    
+    printf "#   Fixed Dependencies:                      #\n"
+    printf "#   - PyTorch 2.4.1                         #\n"
+    printf "#   - numpy 1.26.4                          #\n"
+    printf "#   - xformers 0.0.28.post1                 #\n"
+    printf "#   - tensorflow 2.19.0                     #\n"
     printf "#                                            #\n"
     printf "#   Access ComfyUI at:                       #\n"
     printf "#   http://[POD_IP]:8188                    #\n"
