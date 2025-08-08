@@ -71,6 +71,7 @@ NODES=(
     "https://github.com/rgthree/rgthree-comfy"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
     "https://github.com/comfyanonymous/ComfyUI"  # Added comfy-core
+    "https://github.com/wandb/ComfyUI-WAN-Tools"  # Placeholder, replace with correct URL
     
     # Highly recommended
     "https://github.com/ltdrdata/ComfyUI-Manager"
@@ -283,7 +284,7 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${dir}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                   pip_install -r "$requirements"
+                    pip_install -r "$requirements"
                 fi
             fi
         else
@@ -302,6 +303,10 @@ function provisioning_get_nodes() {
                 pip_install -r requirements.txt
                 cd -
             elif [[ "$dir" == "ComfyUI" ]]; then  # ComfyUI core
+                cd "$path"
+                pip_install -r requirements.txt
+                cd -
+            elif [[ "$dir" == "ComfyUI-WAN-Tools" ]]; then  # New WAN node
                 cd "$path"
                 pip_install -r requirements.txt
                 cd -
@@ -363,9 +368,10 @@ INIT_EOF
         fi
         
         # Install missing Python dependencies
-        pip_install color-matcher --no-deps
-        pip_install audioread --no-deps
-        pip_install librosa --no-deps
+        pip_install -r requirements.txt
+        pip_install color-matcher
+        pip_install audioread
+        pip_install librosa
         
         cd ..
     fi
@@ -373,7 +379,9 @@ INIT_EOF
     # Fix VideoHelperSuite
     if [ -d "ComfyUI-VideoHelperSuite" ]; then
         cd ComfyUI-VideoHelperSuite
-        pip_install imageio imageio-ffmpeg --no-deps
+        pip_install -r requirements.txt
+        pip_install imageio
+        pip_install imageio-ffmpeg
         cd ..
     fi
     
