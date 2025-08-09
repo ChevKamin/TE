@@ -2,7 +2,7 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Fixed for WAN 2.2 with proper dependency resolution
+# Fixed for WAN 2.2 with proper dependency resolution and version enforcement
 
 # Save the workflow JSON as default
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
@@ -71,9 +71,9 @@ NODES=(
     "https://github.com/rgthree/rgthree-comfy"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
     "https://github.com/comfyanonymous/ComfyUI"  # Core ComfyUI with WAN support
+    "https://github.com/ltdrdata/ComfyUI-Manager"  # Manager with version enforcement
     
     # Highly recommended
-    "https://github.com/ltdrdata/ComfyUI-Manager"
     "https://github.com/pythongosssss/ComfyUI-Custom-Scripts"
     "https://github.com/crystian/ComfyUI-Crystools"
     
@@ -303,8 +303,15 @@ function provisioning_get_nodes() {
                 cd -
             elif [[ "$dir" == "ComfyUI" ]]; then  # ComfyUI core
                 cd "$path"
-                # Checkout a recent commit with WAN 2.2 support (adjust commit hash as needed)
-                git checkout $(git rev-list -n 1 --before="2025-08-08" main) 2>/dev/null || git checkout main
+                # Checkout the latest release or commit with v0.3.49+ support
+                git fetch --tags
+                git checkout $(git describe --tags `git rev-list --tags --max-count=1`) 2>/dev/null || git checkout main
+                pip_install -r requirements.txt
+                cd -
+            elif [[ "$dir" == "ComfyUI-Manager" ]]; then
+                cd "$path"
+                git fetch --tags
+                git checkout v3.49 2>/dev/null || git checkout main  # Enforce v3.49 or latest
                 pip_install -r requirements.txt
                 cd -
             elif [[ -e $requirements ]]; then
