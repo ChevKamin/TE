@@ -2,7 +2,7 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Optimized for WAN 2.2 with cache wait and node fixes
+# Optimized for WAN 2.2 with fixed cache wait timing
 
 # Save the workflow JSON as default
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
@@ -202,9 +202,8 @@ function provisioning_start() {
     
     provisioning_get_apt_packages
     provisioning_get_nodes
-    wait_for_manager_cache  # Wait for cache update before proceeding
     provisioning_get_pip_packages_fixed
-    
+    wait_for_manager_cache  # Moved after node and pip installation
     provisioning_get_models \
         "${WORKSPACE}/ComfyUI/models/unet" \
         "${UNET_MODELS[@]}"
@@ -293,7 +292,7 @@ function provisioning_get_nodes() {
                 git fetch --tags
                 latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
                 git checkout $latest_tag 2>/dev/null || git checkout main
-                pip_install -r requirements.txt
+                pip_install -r "$requirements"
                 cd -
             elif [[ -e $requirements ]]; then
                 pip_install -r "${requirements}"
