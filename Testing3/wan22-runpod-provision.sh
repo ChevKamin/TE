@@ -303,15 +303,24 @@ function provisioning_get_nodes() {
                 cd -
             elif [[ "$dir" == "ComfyUI" ]]; then  # ComfyUI core
                 cd "$path"
-                # Checkout the latest release or commit with v0.3.49+ support
+                # Fetch all tags and checkout the latest release
                 git fetch --tags
-                git checkout $(git describe --tags `git rev-list --tags --max-count=1`) 2>/dev/null || git checkout main
+                latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+                git checkout $latest_tag 2>/dev/null || git checkout main
                 pip_install -r requirements.txt
                 cd -
             elif [[ "$dir" == "ComfyUI-Manager" ]]; then
                 cd "$path"
                 git fetch --tags
-                git checkout v3.49 2>/dev/null || git checkout main  # Enforce v3.49 or latest
+                # Try to checkout the latest tag, fallback to a known recent commit
+                latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+                if [[ $latest_tag =~ ^v3\.49 ]]; then
+                    git checkout $latest_tag
+                elif [[ $latest_tag =~ ^v3\.[4-9][0-9] ]]; then
+                    git checkout $latest_tag
+                else
+                    git checkout $(git rev-list -n 1 --before="2025-08-08" main) 2>/dev/null || git checkout main
+                fi
                 pip_install -r requirements.txt
                 cd -
             elif [[ -e $requirements ]]; then
