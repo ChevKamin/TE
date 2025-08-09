@@ -2,7 +2,7 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Optimized for WAN 2.2 with native WanImageToVideo support
+# Optimized for WAN 2.2 with native WanImageToVideo support and cache fix
 
 # Save the workflow JSON as default
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
@@ -164,6 +164,12 @@ function wait_for_manager_cache() {
     local attempt=0
     local cache_updated=false
     
+    # Ensure virtual environment is active and reinstall manager requirements
+    source /opt/ai-dock/bin/venv-set.sh comfyui
+    if [ -d "/opt/ComfyUI/custom_nodes/ComfyUI-Manager" ]; then
+        pip_install -r /opt/ComfyUI/custom_nodes/ComfyUI-Manager/requirements.txt
+    fi
+    
     while [ $attempt -lt $max_attempts ]; do
         if python3 -c "import sys; sys.path.append('/opt/ComfyUI/custom_nodes/ComfyUI-Manager'); import server; print(server.PromptServer.instance.manager.is_registry_updating())" | grep -q "False"; then
             cache_updated=true
@@ -203,7 +209,7 @@ function provisioning_start() {
     provisioning_get_apt_packages
     provisioning_get_nodes
     provisioning_get_pip_packages_fixed
-    wait_for_manager_cache  # After node and pip installation
+    wait_for_manager_cache  # After node and pip installation with explicit setup
     provisioning_get_models \
         "${WORKSPACE}/ComfyUI/models/unet" \
         "${UNET_MODELS[@]}"
@@ -272,7 +278,7 @@ function provisioning_get_nodes() {
             if [[ "$dir" == "ComfyUI-KJNodes" ]]; then
                 cd "$path"
                 git fetch --tags
-                git checkout main  # Use main branch, no pin needed if WanImageToVideo is native
+                git checkout main  # Use main branch for native WanImageToVideo
                 pip_install -r requirements.txt
                 pip_install color-matcher audioread librosa
                 cd -
