@@ -2,10 +2,10 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Optimized for WAN 2.2 with specific node and dependency fixes
+# Optimized for WAN 2.2 with cache wait and node fixes
 
 # Save the workflow JSON as default
-DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/wan22main.json"
+DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
 
 APT_PACKAGES=(
     "ffmpeg"
@@ -158,6 +158,29 @@ function fix_dependencies() {
     echo "✓ Dependencies fixed"
 }
 
+function wait_for_manager_cache() {
+    echo "Waiting for ComfyUI-Manager cache update..."
+    local max_attempts=30
+    local attempt=0
+    local cache_updated=false
+    
+    while [ $attempt -lt $max_attempts ]; do
+        if python3 -c "import sys; sys.path.append('/opt/ComfyUI/custom_nodes/ComfyUI-Manager'); import server; print(server.PromptServer.instance.manager.is_registry_updating())" | grep -q "False"; then
+            cache_updated=true
+            break
+        fi
+        echo "Attempt $((attempt+1))/$max_attempts: Cache update still in progress..."
+        sleep 10
+        ((attempt++))
+    done
+    
+    if [ "$cache_updated" = false ]; then
+        echo "WARNING: ComfyUI-Manager cache update timed out after $max_attempts attempts. Proceeding with potentially outdated cache."
+    else
+        echo "✓ ComfyUI-Manager cache update completed."
+    fi
+}
+
 function provisioning_start() {
     if [[ ! -d /opt/environments/python ]]; then 
         export MAMBA_BASE=true
@@ -179,6 +202,7 @@ function provisioning_start() {
     
     provisioning_get_apt_packages
     provisioning_get_nodes
+    wait_for_manager_cache  # Wait for cache update before proceeding
     provisioning_get_pip_packages_fixed
     
     provisioning_get_models \
@@ -249,7 +273,7 @@ function provisioning_get_nodes() {
             if [[ "$dir" == "ComfyUI-KJNodes" ]]; then
                 cd "$path"
                 git fetch --tags
-                git checkout 5c3e9f2  # Pin to a recent commit with WAN support (update if needed)
+                git checkout 5c3e9f2  # Pin to a commit with WAN support
                 pip_install -r requirements.txt
                 pip_install color-matcher audioread librosa
                 cd -
