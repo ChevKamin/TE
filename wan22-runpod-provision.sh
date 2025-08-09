@@ -5,7 +5,7 @@
 # Optimized for WAN 2.2 with specific node and dependency fixes
 
 # Save the workflow JSON as default
-DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
+DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/wan22main.json"
 
 APT_PACKAGES=(
     "ffmpeg"
