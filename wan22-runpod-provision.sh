@@ -2,7 +2,7 @@
 
 # This file will be sourced in init.sh
 # https://github.com/ai-dock/comfyui
-# Optimized for WAN 2.2 with fixed cache wait timing
+# Optimized for WAN 2.2 with native WanImageToVideo support
 
 # Save the workflow JSON as default
 DEFAULT_WORKFLOW="https://raw.githubusercontent.com/ChevKamin/TE/refs/heads/main/Testing3/wan22main.json"
@@ -61,10 +61,10 @@ TENSORFLOW_PACKAGE="tensorflow==2.19.0"
 COLOUR_SCIENCE_PACKAGE="colour-science==0.4.4"
 
 NODES=(
-    "https://github.com/kijai/ComfyUI-KJNodes"
+    "https://github.com/kijai/ComfyUI-KJNodes"  # For other KJ nodes like ImageResizeKJv2
     "https://github.com/rgthree/rgthree-comfy"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite"
-    "https://github.com/comfyanonymous/ComfyUI"
+    "https://github.com/comfyanonymous/ComfyUI"  # Core with native WanImageToVideo
     "https://github.com/ltdrdata/ComfyUI-Manager"
     "https://github.com/pythongosssss/ComfyUI-Custom-Scripts"
     "https://github.com/crystian/ComfyUI-Crystools"
@@ -203,7 +203,7 @@ function provisioning_start() {
     provisioning_get_apt_packages
     provisioning_get_nodes
     provisioning_get_pip_packages_fixed
-    wait_for_manager_cache  # Moved after node and pip installation
+    wait_for_manager_cache  # After node and pip installation
     provisioning_get_models \
         "${WORKSPACE}/ComfyUI/models/unet" \
         "${UNET_MODELS[@]}"
@@ -272,7 +272,7 @@ function provisioning_get_nodes() {
             if [[ "$dir" == "ComfyUI-KJNodes" ]]; then
                 cd "$path"
                 git fetch --tags
-                git checkout 5c3e9f2  # Pin to a commit with WAN support
+                git checkout main  # Use main branch, no pin needed if WanImageToVideo is native
                 pip_install -r requirements.txt
                 pip_install color-matcher audioread librosa
                 cd -
@@ -495,9 +495,8 @@ function provisioning_print_header() {
     printf "#     WITH DEPENDENCY FIXES                 #\n"
     printf "#  Installing:                              #\n"
     printf "#  - PyTorch 2.4.1                          #\n"
-    printf "#  - ComfyUI-KJNodes (WAN support)          #\n"
+    printf "#  - ComfyUI (with native WanImageToVideo)  #\n"
     printf "#  - VideoHelperSuite                       #\n"
-    printf "#  - ComfyUI (core)                         #\n"
     printf "##############################################\n\n"
 }
 
